@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>仙女氣象 Pro (質感優化版)</title>
+    <style>
+        :root { 
+            --main: #2e86de; --dark: #2d3436; --gray: #4a4a4a; 
+            --bg-start: #a1c4fd; --bg-end: #c2e9fb; 
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            margin: 0; padding: 0; 
+            background: linear-gradient(180deg, var(--bg-start) 0%, var(--bg-end) 100%); 
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; 
+            height: 100dvh; display: flex; flex-direction: column; overflow: hidden; 
+        }
+        
+        .app-container { 
+            padding: 10px 12px 15px 12px; height: 100dvh; display: flex; flex-direction: column; gap: 8px; max-width: 500px; margin: 0 auto; width: 100%; 
+        }
+
+        /* 優化：搜尋列對齊與對比 */
+        .top-nav { display: flex; gap: 8px; height: 44px; flex-shrink: 0; align-items: center; }
+        #cityIn { width: 50%; height: 100%; padding: 0 15px; border-radius: 12px; border: none; font-size: 16px; font-weight: bold; outline: none; background: rgba(255,255,255,0.95); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .search-btn { flex: 1; height: 100%; background: var(--main); color: white; border: none; border-radius: 12px; font-size: 15px; font-weight: 900; cursor: pointer; white-space: nowrap; box-shadow: 0 4px 10px rgba(46, 134, 222, 0.2); transition: 0.2s; }
+        .search-btn:active { background: #267ed4; transform: scale(0.98); }
+        .p-btn { width: 44px; height: 44px; background: #ff9f43; color: white; border: none; border-radius: 12px; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; box-shadow: 0 4px 10px rgba(255, 159, 67, 0.2); }
+
+        .glass-card { background: rgba(255, 255, 255, 0.98); border-radius: 28px; padding: 15px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 12px 30px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.6); overflow: hidden; }
+        .info-header { display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .city-label { font-size: 30px; font-weight: 900; color: var(--dark); margin: 0; }
+        .time-label { font-size: 14px; font-weight: 800; color: var(--main); background: #f0f7ff; padding: 3px 10px; border-radius: 10px; font-family: monospace; /* 時間等寬 */ }
+
+        .temp-section { text-align: center; flex-shrink: 0; }
+        .big-temp { font-size: 85px; font-weight: 900; color: var(--main); line-height: 1; position: relative; display: inline-block; }
+        .unit { font-size: 28px; position: absolute; top: 8px; right: -32px; }
+        .condition { font-size: 26px; font-weight: 900; color: #333; margin-top: 2px; }
+
+        /* 優化：大數據格與間距 */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex-shrink: 0; }
+        .grid-box { background: rgba(248, 251, 255, 0.95); padding: 12px 5px; border-radius: 20px; border: 1px solid #edf2f7; text-align: center; }
+        .g-lab { font-size: 13px; color: var(--gray); display: block; font-weight: 800; margin-bottom: 2px; }
+        .g-val { font-size: 22px; font-weight: 900; color: var(--dark); }
+
+        .advice-box { background: #ffffff; padding: 12px 15px; border-radius: 20px; border-left: 8px solid var(--main); font-size: 17px; font-weight: 900; color: #2d3436; line-height: 1.4; min-height: 60px; display: flex; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.03); margin: 5px 0; }
+        .play-bar { padding: 5px 0; flex-shrink: 0; }
+        #timeRange { -webkit-appearance: none; width: 100%; height: 8px; background: #dfe6e9; border-radius: 10px; outline: none; }
+        #timeRange::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; background: var(--main); border: 4px solid white; border-radius: 50%; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .range-info { display: flex; justify-content: space-between; font-size: 13px; font-weight: 900; color: #7f8c8d; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="top-nav">
+        <input type="text" id="cityIn" placeholder="輸入城市" value="奧斯陸">
+        <button class="search-btn" onclick="startSearch()">搜尋</button>
+        <button class="p-btn" id="pBtn" onclick="togglePlay()">▶</button>
+    </div>
+
+    <div class="glass-card">
+        <div class="info-header">
+            <h1 class="city-label" id="cName">奧斯陸</h1>
+            <span class="time-label" id="tDisp">--/-- --:--</span>
+        </div>
+
+        <div class="temp-section">
+            <div class="big-temp"><span id="tVal">--</span><span class="unit">°C</span></div>
+            <div class="condition" id="tDesc">連線中...</div>
+        </div>
+
+        <div class="grid">
+            <div class="grid-box"><span class="g-lab">🌡️ 體感溫度</span><span class="g-val" id="fVal">--°</span></div>
+            <div class="grid-box"><span class="g-lab">☔ 降雨機率</span><span class="g-val" id="pVal">--%</span></div>
+            <div class="grid-box"><span class="g-lab">💧 空氣濕度</span><span class="g-val" id="hVal">--%</span></div>
+            <div class="grid-box"><span class="g-lab">🌬️ 當前風速</span><span class="g-val" id="wVal">--</span></div>
+        </div>
+
+        <div class="advice-box" id="aBox">✨ 仙女正在觀察天氣...</div>
+
+        <div class="play-bar">
+            <input type="range" id="timeRange" min="0" max="39" value="0" oninput="userMove(this.value)">
+            <div class="range-info"><span>現在</span><span>+24h</span><span>+48h</span><span>+72h</span></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const KEY = 'Bb963d7f3b07db967a16f97ca6f18638';
+    let list = [], offset = 0, cur = 0, isGo = false, loop = null;
+
+    // 優化：數字補零函式
+    const zeroP = (num) => String(num).padStart(2, '0');
+
+    async function startSearch() {
+        const c = document.getElementById('cityIn').value || "台北";
+        try {
+            const g = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(c)}&limit=1&appid=${KEY}`).then(r => r.json());
+            if(!g[0]) return;
+            const [curW, foreW] = await Promise.all([
+                fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${g[0].lat}&lon=${g[0].lon}&units=metric&lang=zh_tw&appid=${KEY}`).then(r => r.json()),
+                fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${g[0].lat}&lon=${g[0].lon}&units=metric&lang=zh_tw&appid=${KEY}`).then(r => r.json())
+            ]);
+            list = [{dt: curW.dt, main: curW.main, weather: curW.weather, wind: curW.wind, pop: foreW.list[0].pop, isNow: true}, ...foreW.list];
+            offset = foreW.city.timezone;
+            document.getElementById('cName').innerText = c;
+            cur = 0; render(0);
+            if(loop) clearInterval(loop);
+            loop = setInterval(() => { if(isGo) { cur = (cur + 1) % list.length; render(cur); } }, 2500);
+        } catch(e) { document.getElementById('tDesc').innerText = "連線失敗"; }
+    }
+
+    function render(i) {
+        if(!list[i]) return;
+        const item = list[i];
+        document.getElementById('tVal').innerText = Math.round(item.main.temp);
+        
+        // 優化：增加多雲☁️圖示
+        let desc = item.weather[0].description;
+        if(desc.includes("cloud")) desc = "☁️ " + desc;
+        document.getElementById('tDesc').innerText = desc;
+
+        document.getElementById('fVal').innerText = Math.round(item.main.feels_like) + "°";
+        document.getElementById('hVal').innerText = item.main.humidity + "%";
+        document.getElementById('pVal').innerText = Math.round(item.pop * 100) + "%";
+        document.getElementById('wVal').innerText = item.wind.speed.toFixed(1);
+
+        let msg = ""; const temp = item.main.temp, pop = item.pop;
+        if (pop > 0.7) msg = "☔ 下雨機率很大，出門一定要帶傘喔！";
+        else if (pop > 0.3) msg = "☁️ 可能會下雨，帶把傘備用比較保險。";
+        else if (temp > 29) msg = "☀️ 太陽好大，多喝水別中暑了。";
+        else if (temp < 18) msg = "🍃 氣溫偏低，仙女記得加件衣服。";
+        else msg = "✨ 天氣超棒，最適合出門散散步了。";
+        document.getElementById('aBox').innerText = "✨ 仙女提醒：" + msg;
+
+        // 優化：補零時間格式化 (04/04 02:00)
+        if(item.isNow) document.getElementById('tDisp').innerText = "現在時刻";
+        else {
+            const time = new Date((item.dt + offset) * 1000);
+            document.getElementById('tDisp').innerText = `${zeroP(time.getUTCMonth()+1)}/${zeroP(time.getUTCDate())} ${zeroP(time.getUTCHours())}:00`;
+        }
+        document.getElementById('timeRange').value = i;
+    }
+
+    function togglePlay() { 
+        isGo = !isGo; 
+        document.getElementById('pBtn').innerText = isGo ? "⏸" : "▶"; 
+    }
+    function userMove(v) { cur = parseInt(v); render(cur); isGo = false; document.getElementById('pBtn').innerText = "▶"; }
+    window.onload = startSearch;
+</script>
+</body>
+</html>
